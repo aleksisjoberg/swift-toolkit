@@ -1205,3 +1205,10 @@ extension EPUBNavigatorViewController: PaginationViewDelegate {
         spreads[index].positionCount(in: readingOrder, positionsByReadingOrder: positionsByReadingOrder)
     }
 }
+
+// Additional fork changes
+extension EPUBNavigatorViewController {
+    public func makeWebviewFirstResponder() {
+        (paginationView.currentView as? EPUBSpreadView)?.webView.becomeFirstResponder()
+    }
+}
