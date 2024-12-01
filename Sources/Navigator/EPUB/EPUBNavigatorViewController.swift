@@ -1207,8 +1207,8 @@ extension EPUBNavigatorViewController: PaginationViewDelegate {
 }
 
 // Additional fork changes
-extension EPUBNavigatorViewController {
-    public func makeWebviewFirstResponder() {
+public extension EPUBNavigatorViewController {
+    func makeWebviewFirstResponder() {
         (paginationView.currentView as? EPUBSpreadView)?.webView.becomeFirstResponder()
     }
 }
