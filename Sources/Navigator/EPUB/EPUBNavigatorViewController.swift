@@ -1211,4 +1211,8 @@ public extension EPUBNavigatorViewController {
     func makeWebviewFirstResponder() {
         (paginationView.currentView as? EPUBSpreadView)?.webView.becomeFirstResponder()
     }
+    
+    func convertPointToNavigatorSpace(_ point: CGPoint) -> CGPoint {
+        (paginationView.currentView as? EPUBSpreadView)?.convertPointToNavigatorSpace(point) ?? .zero
+    }
 }
