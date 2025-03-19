@@ -1250,10 +1250,10 @@ extension EPUBNavigatorViewController: PaginationViewDelegate {
 // Additional fork changes
 public extension EPUBNavigatorViewController {
     func makeWebviewFirstResponder() {
-        (paginationView.currentView as? EPUBSpreadView)?.webView.becomeFirstResponder()
+        (paginationView?.currentView as? EPUBSpreadView)?.webView.becomeFirstResponder()
     }
     
     func convertPointToNavigatorSpace(_ point: CGPoint) -> CGPoint {
-        (paginationView.currentView as? EPUBSpreadView)?.convertPointToNavigatorSpace(point) ?? .zero
+        (paginationView?.currentView as? EPUBSpreadView)?.convertPointToNavigatorSpace(point) ?? .zero
     }
 }
