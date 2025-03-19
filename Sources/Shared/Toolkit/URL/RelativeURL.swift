@@ -1,5 +1,5 @@
 //
-//  Copyright 2024 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -35,7 +35,7 @@ public struct RelativeURL: URLProtocol, Hashable {
     ///     returns foo/baz
     public func resolve<T: URLConvertible>(_ other: T) -> AnyURL? {
         // other is absolute?
-        guard let relativeURL = other.relativeURL else {
+        guard let relativeURL = other.anyURL.relativeURL else {
             return other.anyURL
         }
         return resolve(relativeURL)?.anyURL
@@ -84,7 +84,7 @@ public struct RelativeURL: URLProtocol, Hashable {
     ///     returns baz
     public func relativize<T: URLConvertible>(_ other: T) -> RelativeURL? {
         guard
-            let relativeURL = other.relativeURL,
+            let relativeURL = other.anyURL.relativeURL,
             relativeURL.string.hasPrefix(string)
         else {
             return nil
@@ -112,8 +112,6 @@ public struct RelativeURL: URLProtocol, Hashable {
 /// Implements `URLConvertible`.
 extension RelativeURL: URLConvertible {
     public var anyURL: AnyURL { .relative(self) }
-    public var relativeURL: RelativeURL? { self }
-    public var absoluteURL: AbsoluteURL? { nil }
 }
 
 public extension RelativeURL {

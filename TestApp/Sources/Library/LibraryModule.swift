@@ -1,5 +1,5 @@
 //
-//  Copyright 2024 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -20,9 +20,13 @@ protocol LibraryModuleAPI {
 
     /// Imports a new publication to the library, either from:
     /// - a local file URL
-    /// - a remote URL which will be downloaded
+    /// - a remote URL which will be streamed
     @discardableResult
-    func importPublication(from url: AbsoluteURL, sender: UIViewController) async throws -> Book
+    func importPublication(
+        from url: AbsoluteURL,
+        sender: UIViewController,
+        progress: @escaping (Double) -> Void
+    ) async throws -> Book
 }
 
 protocol LibraryModuleDelegate: ModuleDelegate {
@@ -57,7 +61,11 @@ final class LibraryModule: LibraryModuleAPI {
         return library
     }()
 
-    func importPublication(from url: AbsoluteURL, sender: UIViewController) async throws -> Book {
-        try await library.importPublication(from: url, sender: sender)
+    func importPublication(
+        from url: AbsoluteURL,
+        sender: UIViewController,
+        progress: @escaping (Double) -> Void
+    ) async throws -> Book {
+        try await library.importPublication(from: url, sender: sender, progress: progress)
     }
 }

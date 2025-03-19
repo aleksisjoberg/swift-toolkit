@@ -1,5 +1,5 @@
 //
-//  Copyright 2024 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -55,8 +55,9 @@ public class ReadiumWebPubParser: PublicationParser, Loggable {
 
         return await resource.readAsRWPM(warnings: warnings)
             .flatMap { manifest in
-                guard let baseURL = manifest.baseURL else {
-                    return .failure(.decoding("No valid self link found in the manifest"))
+                let baseURL = manifest.baseURL
+                if baseURL == nil {
+                    warnings?.log(RWPMWarning(message: "No valid self link found in the manifest", severity: .moderate))
                 }
 
                 return .success(CompositeContainer(
@@ -164,4 +165,12 @@ private extension Streamable {
             }
         }
     }
+}
+
+/// Warning raised when parsing a RWPM.
+public struct RWPMWarning: Warning {
+    public let message: String
+    public let severity: WarningSeverityLevel
+
+    public var tag: String { "rwpm" }
 }

@@ -1,5 +1,5 @@
 //
-//  Copyright 2024 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -24,8 +24,13 @@ protocol OPDSModuleAPI {
 }
 
 protocol OPDSModuleDelegate: ModuleDelegate {
-    /// Called when an OPDS publication needs to be downloaded.
-    func opdsDownloadPublication(_ publication: Publication?, at link: ReadiumShared.Link, sender: UIViewController) async throws -> Book
+    /// Called when an OPDS publication needs to be imported.
+    func opdsDownloadPublication(
+        _ publication: Publication?,
+        at link: ReadiumShared.Link,
+        sender: UIViewController,
+        progress: @escaping (Double) -> Void
+    ) async throws -> Book
 }
 
 final class OPDSModule: OPDSModuleAPI {

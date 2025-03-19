@@ -2,7 +2,120 @@
 
 All migration steps necessary in reading apps to upgrade to major versions of the Swift Readium toolkit will be documented in this file.
 
-## 3.0.0-alpha.2
+<!-- ## Unreleased -->
+
+## 3.1.0
+
+### Bringing back Minizip
+
+Minizip was removed in version 3.0.0 and replaced by ZIPFoundation. Until the ZIPFoundation implementation is thoroughly tested, we have reintroduced Minizip as a dependency in version 3.1.0.
+
+If you use Carthage, add `Minizip.xcframework` back to your dependencies. No changes are required when using Swift Package Manager or CocoaPods.
+
+
+## 3.0.0
+
+> [!IMPORTANT]
+> If you upgrade from an `alpha` or `beta` version of 3.0.0, please refer to the [3.0.0-beta.2 migration guide](https://github.com/readium/swift-toolkit/blob/3.0.0-beta.2/docs/Migration%20Guide.md) instead.
+
+### R2 prefix dropped
+
+The `R2` prefix is now deprecated. The `R2Shared`, `R2Streamer` and `R2Navigator` packages were renamed as `ReadiumShared`, `ReadiumStreamer` and `ReadiumNavigator`.
+
+You will need to update your imports, as well as the dependencies you include in your project:
+
+* Swift Package Manager: There's nothing to do.
+* Carthage:
+    * Update the Carthage dependencies and make sure the new `ReadiumShared.xcframework`, `ReadiumStreamer.xcframework` and `ReadiumNavigator.xcframework` were built.
+    * Replace the old frameworks with the new ones in your project.
+* CocoaPods:
+    * Update the `pod` statements to reflect the new names of `ReadiumShared`, `ReadiumStreamer` and `ReadiumNavigator`.
+
+### Dependency managers
+
+#### CocoaPods Specs repository
+
+All the libraries are now available on a dedicated [Readium CocoaPods Specs repository](https://github.com/readium/podspecs). To use it, add the following statements at the top of your `Podfile`:
+
+```
+source 'https://github.com/readium/podspecs'
+source 'https://cdn.cocoapods.org/'
+```
+
+Then, you can reference the Readium libraries as any other CocoaPods dependency, without specifying the full URL to the `Podspec` file.
+
+```
+pod 'ReadiumShared', '~> 3.0.0'
+pod 'ReadiumStreamer', '~> 3.0.0'
+pod 'ReadiumNavigator', '~> 3.0.0'
+pod 'ReadiumOPDS', '~> 3.0.0'
+pod 'ReadiumLCP', '~> 3.0.0'
+```
+
+Don't forget to remove the statements for some internal dependencies that are now referenced automatically:
+
+```diff
+-pod 'ReadiumInternal', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/VERSION/Support/CocoaPods/ReadiumInternal.podspec'
+-pod 'ReadiumGCDWebServer', podspec: 'https://raw.githubusercontent.com/readium/GCDWebServer/4.0.0/GCDWebServer.podspec'
+-pod 'Fuzi', podspec: 'https://raw.githubusercontent.com/readium/Fuzi/refs/heads/master/Fuzi.podspec'
+```
+
+Finally, run `pod install --repo-update`.
+
+#### ZIPFoundation replaces Minizip
+
+The default `ZIPArchiveOpener` is now using ZIPFoundation instead of Minizip, with improved performances when reading ranges of `stored` ZIP entries.
+
+If you use Carthage, remove `Minizip.xcframework` from your dependencies and add `ReadiumZIPFoundation.xcframework` instead. No changes are needed when using Swift Package Manager or CocoaPods.
+
+:warning: When upgrading to 3.1.0 instead of 3.0.0, keep `Minizip.xcframework in your Carthage dependencies.
+
+### Migration of HREFs and Locators (bookmarks, annotations, etc.)
+
+ > [!CAUTION]
+ > This requires a database migration in your application, if you were persisting `Locator` objects.
+
+ In Readium v2.x, a `Link` or `Locator`'s `href` could be either:
+
+ * a valid absolute URL for a streamed publication, e.g. `https://domain.com/isbn/dir/my%20chapter.html`,
+ * a percent-decoded path for a local archive such as an EPUB, e.g. `/dir/my chapter.html`.
+     * Note that it was relative to the root of the archive (`/`).
+
+ To improve the interoperability with other Readium toolkits (in particular the Readium Web Toolkits, which only work in a streaming context) **Readium v3 now generates and expects valid URLs** for `Locator` and `Link`'s `href`.
+
+ * `https://domain.com/isbn/dir/my%20chapter.html` is left unchanged, as it was already a valid URL.
+ * `/dir/my chapter.html` becomes the relative URL path `dir/my%20chapter.html`
+     * We dropped the `/` prefix to avoid issues when resolving to a base URL.
+     * Special characters are percent-encoded.
+
+ **You must migrate the HREFs or Locators stored in your database** when upgrading to Readium 3. To assist you, two helpers are provided: `AnyURL(legacyHREF:)` and `Locator(legacyJSONString:)`.
+
+ Here's an example of a [GRDB migration](https://swiftpackageindex.com/groue/grdb.swift/master/documentation/grdb/migrations) that can serve as inspiration:
+
+ ```swift
+ migrator.registerMigration("normalizeHREFs") { db in
+    let normalizedRows: [(id: Int, href: String, locator: String)] =
+        try Row.fetchAll(db, sql: "SELECT id, href, locator FROM bookmarks")
+            .compactMap { row in
+                guard
+                    let normalizedHREF = AnyURL(legacyHREF: row["href"])?.string,
+                    let normalizedLocator = try Locator(legacyJSONString: row["locator"])?.jsonString
+                else {
+                    return nil
+                }
+                return (row["id"], normalizedHREF, normalizedLocator)
+            }
+            
+    let updateStmt = try db.makeStatement(sql: "UPDATE bookmarks SET href = :href, locator = :locator WHERE id = :id")
+    for (id, href, locator) in normalizedRows {
+        try updateStmt.execute(arguments: [
+            "id": id,
+            "href": href
+            "locator": locator
+        ])
+    }
+}
+```
 
 ### Error management
 
@@ -79,7 +192,7 @@ To use `ReadiumAdapterLCPSQLite`, you must update your imports and the dependenc
 * CocoaPods:
     * Update the `pod` statements in your `Podfile` with the following, before running `pod install`:
         ```
-        pod 'ReadiumAdapterLCPSQLite', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/3.0.0/Support/CocoaPods/ReadiumAdapterLCPSQLite.podspec'
+        pod 'ReadiumAdapterLCPSQLite', '~> 3.0.0'
         ```
 Then, provide the adapters when initializing the `LCPService`.
 
@@ -102,73 +215,6 @@ The LCP APIs now accept a `LicenseDocumentSource` enum instead of a URL to an LC
 ```diff
 -lcpService.acquirePublication(from: url) { ... }
 +await lcpService.acquirePublication(from: .file(FileURL(url: url)))
-```
-
-
-## 3.0.0-alpha.1
-
-### R2 prefix dropped
-
-The `R2` prefix is now deprecated. The `R2Shared`, `R2Streamer` and `R2Navigator` packages were renamed as `ReadiumShared`, `ReadiumStreamer` and `ReadiumNavigator`.
-
-You will need to update your imports, as well as the dependencies you include in your project:
-
-* Swift Package Manager: There's nothing to do.
-* Carthage:
-    * Update the Carthage dependencies and make sure the new `ReadiumShared.xcframework`, `ReadiumStreamer.xcframework` and `ReadiumNavigator.xcframework` were built.
-    * Replace the old frameworks with the new ones in your project.
-* CocoaPods:
-    * Update the `pod` statements in your `Podfile` with the following, before running `pod install`:
-        ```
-        pod 'ReadiumShared', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/3.0.0/Support/CocoaPods/ReadiumShared.podspec'
-        pod 'ReadiumStreamer', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/3.0.0/Support/CocoaPods/ReadiumStreamer.podspec'
-        pod 'ReadiumNavigator', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/3.0.0/Support/CocoaPods/ReadiumNavigator.podspec'
-        ```
-
-### Migration of HREFs and Locators (bookmarks, annotations, etc.)
-
- :warning: This requires a database migration in your application, if you were persisting `Locator` objects.
-
- In Readium v2.x, a `Link` or `Locator`'s `href` could be either:
-
- * a valid absolute URL for a streamed publication, e.g. `https://domain.com/isbn/dir/my%20chapter.html`,
- * a percent-decoded path for a local archive such as an EPUB, e.g. `/dir/my chapter.html`.
-     * Note that it was relative to the root of the archive (`/`).
-
- To improve the interoperability with other Readium toolkits (in particular the Readium Web Toolkits, which only work in a streaming context) **Readium v3 now generates and expects valid URLs** for `Locator` and `Link`'s `href`.
-
- * `https://domain.com/isbn/dir/my%20chapter.html` is left unchanged, as it was already a valid URL.
- * `/dir/my chapter.html` becomes the relative URL path `dir/my%20chapter.html`
-     * We dropped the `/` prefix to avoid issues when resolving to a base URL.
-     * Special characters are percent-encoded.
-
- **You must migrate the HREFs or Locators stored in your database** when upgrading to Readium 3. To assist you, two helpers are provided: `AnyURL(legacyHREF:)` and `Locator(legacyJSONString:)`.
-
- Here's an example of a [GRDB migration](https://swiftpackageindex.com/groue/grdb.swift/master/documentation/grdb/migrations) that can serve as inspiration:
-
- ```swift
- migrator.registerMigration("normalizeHREFs") { db in
-    let normalizedRows: [(id: Int, href: String, locator: String)] =
-        try Row.fetchAll(db, sql: "SELECT id, href, locator FROM bookmarks")
-            .compactMap { row in
-                guard
-                    let normalizedHREF = AnyURL(legacyHREF: row["href"])?.string,
-                    let normalizedLocator = try Locator(legacyJSONString: row["locator"])?.jsonString
-                else {
-                    return nil
-                }
-                return (row["id"], normalizedHREF, normalizedLocator)
-            }
-            
-    let updateStmt = try db.makeStatement(sql: "UPDATE bookmarks SET href = :href, locator = :locator WHERE id = :id")
-    for (id, href, locator) in normalizedRows {
-        try updateStmt.execute(arguments: [
-            "id": id,
-            "href": href
-            "locator": locator
-        ])
-    }
-}
 ```
 
 
@@ -213,11 +259,13 @@ A new Readium package was added to host the private internal utilities used by t
     pod 'ReadiumInternal', podspec: 'https://raw.githubusercontent.com/readium/swift-toolkit/2.5.0/Support/CocoaPods/ReadiumInternal.podspec'
     ```
 
-:warning: It is not recommended to use any API from `ReadiumInternal` directly in your application. No compatibility guarantee is made between two versions.
+> [!CAUTION]
+> It is not recommended to use any API from `ReadiumInternal` directly in your application. No compatibility guarantee is made between two versions.
 
 ### Migrating the HTTP server
 
-:warning: Migrating to the new Preferences API (see below) is required for the user settings to work with the new HTTP server.
+> [!IMPORTANT]
+> Migrating to the new Preferences API (see below) is required for the user settings to work with the new HTTP server.
 
 The Streamer's `PublicationServer` is now deprecated and you don't need to manage the HTTP server or register publications manually to it anymore.
 

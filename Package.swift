@@ -1,6 +1,6 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.10
 //
-//  Copyright 2021 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -10,7 +10,7 @@ import PackageDescription
 let package = Package(
     name: "Readium",
     defaultLocalization: "en",
-    platforms: [.iOS(.v13)],
+    platforms: [.iOS("13.4")],
     products: [
         .library(name: "ReadiumShared", targets: ["ReadiumShared"]),
         .library(name: "ReadiumStreamer", targets: ["ReadiumStreamer"]),
@@ -26,21 +26,23 @@ let package = Package(
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.8.0"),
         .package(url: "https://github.com/marmelroy/Zip.git", from: "2.1.0"),
         .package(url: "https://github.com/ra1028/DifferenceKit.git", from: "1.3.0"),
-        .package(url: "https://github.com/readium/Fuzi.git", from: "3.1.4"),
+        .package(url: "https://github.com/readium/Fuzi.git", from: "4.0.0"),
         .package(url: "https://github.com/readium/GCDWebServer.git", from: "4.0.0"),
+        .package(url: "https://github.com/readium/ZIPFoundation.git", from: "3.0.0"),
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.7.0"),
         .package(url: "https://github.com/stephencelis/SQLite.swift.git", from: "0.15.0"),
-        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
     ],
     targets: [
         .target(
             name: "ReadiumShared",
-            dependencies: ["ReadiumInternal", "Fuzi", "SwiftSoup", "Zip"],
-            path: "Sources/Shared",
-            exclude: [
-                // Support for ZIPFoundation is not yet achieved.
-                "Toolkit/ZIP/ZIPFoundation.swift",
+            dependencies: [
+                "ReadiumInternal",
+                "SwiftSoup",
+                "Zip",
+                .product(name: "ReadiumFuzi", package: "Fuzi"),
+                .product(name: "ReadiumZIPFoundation", package: "ZIPFoundation"),
             ],
+            path: "Sources/Shared",
             linkerSettings: [
                 .linkedFramework("CoreServices"),
                 .linkedFramework("UIKit"),
@@ -59,8 +61,8 @@ let package = Package(
             name: "ReadiumStreamer",
             dependencies: [
                 "CryptoSwift",
-                "Fuzi",
                 "ReadiumShared",
+                .product(name: "ReadiumFuzi", package: "Fuzi"),
             ],
             path: "Sources/Streamer",
             resources: [
@@ -102,8 +104,8 @@ let package = Package(
         .target(
             name: "ReadiumOPDS",
             dependencies: [
-                "Fuzi",
                 "ReadiumShared",
+                .product(name: "ReadiumFuzi", package: "Fuzi"),
             ],
             path: "Sources/OPDS"
         ),
@@ -120,8 +122,8 @@ let package = Package(
             name: "ReadiumLCP",
             dependencies: [
                 "CryptoSwift",
-                "ZIPFoundation",
                 "ReadiumShared",
+                .product(name: "ReadiumZIPFoundation", package: "ZIPFoundation"),
             ],
             path: "Sources/LCP",
             resources: [

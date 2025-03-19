@@ -1,5 +1,5 @@
 //
-//  Copyright 2024 Readium Foundation. All rights reserved.
+//  Copyright 2025 Readium Foundation. All rights reserved.
 //  Use of this source code is governed by the BSD-style license
 //  available in the top-level LICENSE file of the project.
 //
@@ -424,8 +424,6 @@ private class MockContainer: Container {
         return MockResource(length: length, archiveProperties: archiveProperties)
     }
 
-    func close() {}
-
     struct MockResource: Resource {
         private let _length: UInt64
         private let _properties: ResourceProperties
@@ -436,8 +434,6 @@ private class MockContainer: Container {
             props.archive = archiveProperties
             _properties = props
         }
-
-        func close() {}
 
         let sourceURL: (any AbsoluteURL)? = nil
 
