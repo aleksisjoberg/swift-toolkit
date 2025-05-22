@@ -169,29 +169,26 @@ class EPUBMetadataParserTests: XCTestCase {
             title: "Alice's Adventures in Wonderland",
             authors: [
                 Contributor(name: "Author 1"),
+                Contributor(name: "Author 3"),
                 Contributor(name: "Author 4"),
-                Contributor(name: "Author 5"),
                 Contributor(name: "Author A"),
-                Contributor(name: "Author 2", roles: ["aut"]),
-                Contributor(name: "Author B", roles: ["aut"]),
-                Contributor(name: "Author C", roles: ["aut"]),
-                Contributor(name: "Author 3", roles: ["aut"]),
-                Contributor(name: "Cameleon 1", roles: ["aut", "pbl"]),
-                Contributor(name: "Cameleon A", roles: ["aut", "pbl"]),
+                Contributor(name: "Author 2"),
+                Contributor(name: "Cameleon 1"),
+                Contributor(name: "Cameleon A"),
             ],
-            translators: [Contributor(name: "Translator", roles: ["trl"])],
-            editors: [Contributor(name: "Editor", roles: ["edt"])],
-            artists: [Contributor(name: "Artist", roles: ["art"])],
+            translators: [Contributor(name: "Translator")],
+            editors: [Contributor(name: "Editor")],
+            artists: [Contributor(name: "Artist")],
             illustrators: [
-                Contributor(name: "Illustrator 1", roles: ["ill"]),
-                Contributor(name: "Illustrator 2", sortAs: "sorting", roles: ["ill"]),
-                Contributor(name: "Illustrator A", sortAs: "sorting", roles: ["ill"]),
+                Contributor(name: "Illustrator 1"),
+                Contributor(name: "Illustrator 2", sortAs: "sorting"),
+                Contributor(name: "Illustrator A", sortAs: "sorting"),
             ],
             letterers: [],
             pencilers: [],
-            colorists: [Contributor(name: "Colorist", roles: ["clr"])],
+            colorists: [Contributor(name: "Colorist")],
             inkers: [],
-            narrators: [Contributor(name: "Narrator", roles: ["nrt"])],
+            narrators: [Contributor(name: "Narrator")],
             contributors: [
                 Contributor(name: "Contributor 1"),
                 Contributor(name: "Unknown", roles: ["unknown"]),
@@ -200,9 +197,8 @@ class EPUBMetadataParserTests: XCTestCase {
             publishers: [
                 Contributor(name: "Publisher 1"),
                 Contributor(name: "Publisher A"),
-                Contributor(name: "Publisher 2", roles: ["pbl"]),
-                Contributor(name: "Cameleon 1", roles: ["aut", "pbl"]),
-                Contributor(name: "Cameleon A", roles: ["aut", "pbl"]),
+                Contributor(name: "Publisher B"),
+                Contributor(name: "Publisher 2"),
             ],
             imprints: [],
             otherMetadata: [
@@ -316,7 +312,7 @@ class EPUBMetadataParserTests: XCTestCase {
         XCTAssertEqual(
             sut.accessibility,
             Accessibility(
-                conformsTo: [.epubA11y10WCAG20A],
+                conformsTo: [.epubA11y10WCAG20A, .epubA11y11WCAG20AAA, .epubA11y11WCAG21AA],
                 certification: Accessibility.Certification(
                     certifiedBy: "Accessibility Testers Group",
                     credential: "DAISY OK",
@@ -326,9 +322,11 @@ class EPUBMetadataParserTests: XCTestCase {
                 accessModes: [.textual, .visual],
                 accessModesSufficient: [[.textual], [.textual, .visual]],
                 features: [.structuralNavigation, .alternativeText],
-                hazards: [.motionSimulation, .noSoundHazard]
+                hazards: [.motionSimulation, .noSoundHazard],
+                exemptions: [.eaaMicroenterprise, .eaaFundamentalAlteration, .eaaDisproportionateBurden]
             )
         )
+        // Checks that the a11y metadata are not added to otherMetadata.
         XCTAssertEqual(Array(sut.otherMetadata.keys), ["presentation"])
     }
 
@@ -337,7 +335,7 @@ class EPUBMetadataParserTests: XCTestCase {
         XCTAssertEqual(
             sut.accessibility,
             Accessibility(
-                conformsTo: [.epubA11y10WCAG20A],
+                conformsTo: [.epubA11y10WCAG20A, .epubA11y11WCAG20AAA, .epubA11y11WCAG21AA],
                 certification: Accessibility.Certification(
                     certifiedBy: "Accessibility Testers Group",
                     credential: "DAISY OK",
@@ -347,10 +345,34 @@ class EPUBMetadataParserTests: XCTestCase {
                 accessModes: [.textual, .visual],
                 accessModesSufficient: [[.textual], [.textual, .visual]],
                 features: [.structuralNavigation, .alternativeText],
-                hazards: [.motionSimulation, .noSoundHazard]
+                hazards: [.motionSimulation, .noSoundHazard],
+                exemptions: [.eaaMicroenterprise, .eaaFundamentalAlteration, .eaaDisproportionateBurden]
             )
         )
+        // Checks that the a11y metadata are not added to otherMetadata.
         XCTAssertEqual(Array(sut.otherMetadata.keys), ["presentation"])
+    }
+
+    func testParseEPUB2TDM() throws {
+        let sut = try parseMetadata("tdm-epub2")
+        XCTAssertEqual(
+            sut.tdm,
+            TDM(
+                reservation: .all,
+                policy: HTTPURL(string: "https://provider.com/policies/policy.json")!
+            )
+        )
+    }
+
+    func testParseEPUB3TDM() throws {
+        let sut = try parseMetadata("tdm-epub3")
+        XCTAssertEqual(
+            sut.tdm,
+            TDM(
+                reservation: .all,
+                policy: HTTPURL(string: "https://provider.com/policies/policy.json")!
+            )
+        )
     }
 
     // MARK: - Toolkit
